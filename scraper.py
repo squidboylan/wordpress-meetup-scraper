@@ -5,6 +5,7 @@ import requests
 import json
 import datetime
 import sys
+import zipcode
 
 meetup_key = sys.argv[1]
 
@@ -60,7 +61,8 @@ for i in json_response:
             "start": start_date,
             "end": end_date,
             "location": location,
-            "hashtag": hashtag
+            "hashtag": hashtag,
+            "zipcode": None
             }
         event_list.append(event)
 
@@ -81,6 +83,23 @@ for i in json_response['results']:
     # If a venue is available get it
     if 'venue' in i.keys():
         location = i['venue']['city'] + ", " + i['venue']['localized_country_name']
+        zip = None
+        lat = None
+        lon = None
+        if "lat" in i['venue'].keys() and "lon" in i['venue'].keys():
+            lat = i['venue']['lat']
+            lon = i['venue']['lon']
+
+        if 'zipcode' in i['venue'].keys():
+            zip = i['venue']['zipcode']
+
+        elif lat and lon:
+            zipcodes = zipcode.isinradius((lat, lon), 1)
+            if len(zipcodes) >= 1:
+                zip = zipcodes[0]
+                zip = zip.to_dict()['zip']
+                print("doing the thing")
+
     else:
         location = None
 
@@ -92,8 +111,11 @@ for i in json_response['results']:
         "start": start_date,
         "end": None,
         "location": location,
-        "hashtag": None
+        "hashtag": None,
+        'lat': lat,
+        'lon': lon,
+        "zipcode": zip
         }
     event_list.append(event)
 
-print(json.dumps(event_list))
+#print(json.dumps(event_list))
